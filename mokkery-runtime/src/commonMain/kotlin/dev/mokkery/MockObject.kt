@@ -1,8 +1,7 @@
-@file:Suppress("UNUSED_PARAMETER", "UnusedReceiverParameter")
+@file:Suppress("UNUSED_PARAMETER", "UnusedReceiverParameter", "unused")
 
 package dev.mokkery
 
-import dev.mokkery.internal.context.ObjectMockRegistry
 import dev.mokkery.internal.utils.mokkeryIntrinsic
 
 /**
@@ -96,16 +95,7 @@ public inline fun <reified T : Any> MokkerySuiteScope.unmockObject(): Unit = mok
  * assertEquals("scoped mock", result)
  * ```
  */
-public inline fun <reified T : Any, R> withMockedObject(block: () -> R): R {
-    val objectId = T::class.qualifiedName ?: error("Cannot get qualified name for ${T::class}")
-    val registry = ObjectMockRegistry.current()
-    registry.activate(objectId)
-    try {
-        return block()
-    } finally {
-        registry.deactivate(objectId)
-    }
-}
+public inline fun <reified T : Any, R> withMockedObject(block: () -> R): R = mokkeryIntrinsic
 
 /**
  * Executes [block] with the specified object mocked within a [MokkerySuiteScope].
@@ -116,13 +106,4 @@ public inline fun <reified T : Any, R> withMockedObject(block: () -> R): R {
  * @return The result of [block]
  * @see withMockedObject
  */
-public inline fun <reified T : Any, R> MokkerySuiteScope.withMockedObject(block: () -> R): R {
-    val objectId = T::class.qualifiedName ?: error("Cannot get qualified name for ${T::class}")
-    val registry = ObjectMockRegistry.current()
-    registry.activate(objectId)
-    try {
-        return block()
-    } finally {
-        registry.deactivate(objectId)
-    }
-}
+public inline fun <reified T : Any, R> MokkerySuiteScope.withMockedObject(block: () -> R): R = mokkeryIntrinsic

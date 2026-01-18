@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.builders.irTry
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -103,6 +104,7 @@ class MokkeryTransformer(compilerPluginScope: CompilerPluginScope) : CoreTransfo
             // Object mocking intrinsics
             Mokkery.Name.mockObject -> replaceWithMockObject(expression)
             Mokkery.Name.unmockObject -> replaceWithUnmockObject(expression)
+            Mokkery.Name.withMockedObject -> replaceWithMockedObject(expression)
             else -> expression
         }
     }
@@ -349,6 +351,57 @@ class MokkeryTransformer(compilerPluginScope: CompilerPluginScope) : CoreTransfo
             irCall(registryClass.getSimpleFunction("deactivate")!!) {
                 arguments[0] = currentCall
                 arguments[1] = irString(objectId)
+            }
+        }
+    }
+
+    private fun replaceWithMockedObject(call: IrCall): IrExpression {
+        val typeToMock = call.typeArguments.firstOrNull() ?: return call
+        val classToMock = typeToMock.getClass() ?: return call
+        if (!classToMock.isObject) {
+            return call
+        }
+        val objectId = classToMock.kotlinFqName.asString()
+        val registryClass = getClass(Mokkery.Class.ObjectMockRegistry)
+        val companionObject = registryClass.companionObject() ?: return call
+
+        // Get the block lambda - it's the last argument
+        val blockArg = call.arguments.lastOrNull() ?: return call
+
+        return declarationIrBuilder {
+            irBlock {
+                // ObjectMockRegistry.current().activate(objectId)
+                val currentCall = irCall(companionObject.getSimpleFunction("current")!!) {
+                    arguments[0] = irGetObject(companionObject.symbol)
+                }
+                val activateCall = irCall(registryClass.getSimpleFunction("activate")!!) {
+                    arguments[0] = currentCall
+                    arguments[1] = irString(objectId)
+                }
+                +activateCall
+
+                // Generate try { block.invoke() } finally { registry.deactivate(objectId) }
+                val deactivateCall = irCall(registryClass.getSimpleFunction("deactivate")!!) {
+                    val current = irCall(companionObject.getSimpleFunction("current")!!) {
+                        arguments[0] = irGetObject(companionObject.symbol)
+                    }
+                    arguments[0] = current
+                    arguments[1] = irString(objectId)
+                }
+
+                // Invoke the block
+                val blockInvokeCall = irCall(
+                    (blockArg.type.getClass()!!.getSimpleFunction("invoke")!!)
+                ) {
+                    arguments[0] = blockArg
+                }
+
+                +irTry(
+                    type = call.type,
+                    tryResult = blockInvokeCall,
+                    catches = emptyList(),
+                    finallyExpression = deactivateCall
+                )
             }
         }
     }

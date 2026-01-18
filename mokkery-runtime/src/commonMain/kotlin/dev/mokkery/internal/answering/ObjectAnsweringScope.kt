@@ -7,6 +7,7 @@ import dev.mokkery.answering.SuspendAnsweringScope
 import dev.mokkery.internal.context.ObjectMockRegistry
 import dev.mokkery.internal.signature.FunctionSignature
 import dev.mokkery.internal.templating.CallTemplate
+import dev.mokkery.internal.utils.bestName
 
 /**
  * Answering scope for object mocking.
@@ -23,7 +24,7 @@ internal class ObjectAnsweringScope<T>(
         val registry = ObjectMockRegistry.current()
         val signature = FunctionSignature(
             name = template.name,
-            parameterTypes = template.parameters.map { it.type.qualifiedName ?: "kotlin.Any" },
+            parameterTypes = template.parameters.map { it.type.bestName() },
             returnType = "kotlin.Any" // We don't know the exact return type here
         )
         registry.registerStub(objectId, signature, answer)
