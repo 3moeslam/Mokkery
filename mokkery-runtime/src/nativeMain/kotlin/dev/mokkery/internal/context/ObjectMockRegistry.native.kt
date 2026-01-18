@@ -5,6 +5,10 @@ import dev.mokkery.internal.signature.FunctionSignature
 import dev.mokkery.internal.tracing.ObjectCallTrace
 import kotlin.native.concurrent.ThreadLocal
 
+// Top-level ThreadLocal storage for Native platform
+@ThreadLocal
+private var objectMockRegistryInstance: ObjectMockRegistry? = null
+
 /**
  * Native implementation of ObjectMockRegistry using Kotlin/Native's ThreadLocal.
  * Each thread gets its own registry, ensuring parallel test execution is isolated.
@@ -14,17 +18,15 @@ internal actual class ObjectMockRegistry @PublishedApi internal actual construct
     private val impl = ObjectMockRegistryImpl()
 
     actual companion object {
-        @ThreadLocal
-        private var instance: ObjectMockRegistry? = null
 
         @PublishedApi
         internal actual fun current(): ObjectMockRegistry {
-            return instance ?: ObjectMockRegistry().also { instance = it }
+            return objectMockRegistryInstance ?: ObjectMockRegistry().also { objectMockRegistryInstance = it }
         }
 
         actual fun clearCurrent() {
-            instance?.clearAll()
-            instance = null
+            objectMockRegistryInstance?.clearAll()
+            objectMockRegistryInstance = null
         }
     }
 
