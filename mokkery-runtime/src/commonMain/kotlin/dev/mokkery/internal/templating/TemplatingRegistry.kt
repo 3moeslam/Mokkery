@@ -4,8 +4,10 @@ import dev.mokkery.context.Function
 import dev.mokkery.context.MokkeryContext
 import dev.mokkery.context.require
 import dev.mokkery.internal.MokkeryCollection
+import dev.mokkery.internal.MokkeryInstanceId
 import dev.mokkery.internal.MutableMokkeryCollection
 import dev.mokkery.internal.context.instanceSpec
+import dev.mokkery.internal.createObjectMockScope
 import dev.mokkery.internal.instanceId
 import dev.mokkery.internal.requireInstanceScope
 import dev.mokkery.internal.utils.takeIfImplementedOrAny
@@ -56,6 +58,16 @@ internal interface TemplatingRegistry : MokkeryContext.Element {
         input: Map<TemplatingParameter, ArgMatcher<Any?>>
     )
 
+    /**
+     * Registers a template for an object mock call.
+     * Used by object mocking support in every { } / verify { } blocks.
+     */
+    fun registerObject(
+        objectId: String,
+        functionName: String,
+        input: Map<TemplatingParameter, ArgMatcher<Any?>>
+    )
+
     companion object Key : MokkeryContext.Key<TemplatingRegistry>
 }
 
@@ -96,6 +108,32 @@ private class TemplatingRegistryImpl : TemplatingRegistry {
         _templates.add(
             CallTemplate(
                 instanceId = scope.instanceId,
+                name = functionName,
+                parameters = params,
+                matchers = input.map { (param, matcher) -> param.name to matcher }.toMap(),
+            )
+        )
+    }
+
+    override fun registerObject(
+        objectId: String,
+        functionName: String,
+        input: Map<TemplatingParameter, ArgMatcher<Any?>>
+    ) {
+        // For object mocking, we use the objectId as the typeName and id=0
+        // since there's only one instance of each object singleton
+        val scope = createObjectMockScope(objectId)
+        _collection.upsertScope(scope)
+        val params = input.keys.map { param ->
+            Function.Parameter(
+                name = param.name,
+                type = param.type ?: Any::class,
+                isVararg = param.isVararg,
+            )
+        }
+        _templates.add(
+            CallTemplate(
+                instanceId = MokkeryInstanceId(objectId, 0),
                 name = functionName,
                 parameters = params,
                 matchers = input.map { (param, matcher) -> param.name to matcher }.toMap(),

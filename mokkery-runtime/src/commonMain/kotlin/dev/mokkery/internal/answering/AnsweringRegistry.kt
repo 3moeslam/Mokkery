@@ -12,6 +12,7 @@ import dev.mokkery.internal.CallNotMockedException
 import dev.mokkery.internal.MokkeryCollection
 import dev.mokkery.internal.context.MokkeryMockSpec
 import dev.mokkery.internal.context.MokkerySpySpec
+import dev.mokkery.internal.context.ObjectMokkeryInstanceSpec
 import dev.mokkery.internal.context.instanceSpec
 import dev.mokkery.internal.context.toCallTrace
 import dev.mokkery.internal.context.tools
@@ -101,6 +102,11 @@ private class AnsweringRegistryImpl : AnsweringRegistry {
                 val renderer = Renderers.callTraceAlias(from = aliases)
                 throw CallNotMockedException(renderer.render(trace))
             }
+        }
+        is ObjectMokkeryInstanceSpec -> {
+            // Object mocks handle their own answering through ObjectInterceptor
+            // This code path should never be reached
+            error("Object mocks should not reach AnsweringRegistry.handleMissingAnswer")
         }
     }
 

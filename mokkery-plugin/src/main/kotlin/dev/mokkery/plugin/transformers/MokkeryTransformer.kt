@@ -49,8 +49,11 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.getSimpleFunction
 import org.jetbrains.kotlin.ir.util.isClass
+import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.ir.util.kotlinFqName
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.statements
@@ -97,6 +100,9 @@ class MokkeryTransformer(compilerPluginScope: CompilerPluginScope) : CoreTransfo
             Mokkery.Name.verify -> replaceWithInternalVerify(expression, internalVerify.symbol)
             Mokkery.Name.everySuspend -> replaceWithInternalEvery(expression, internalEverySuspend.symbol)
             Mokkery.Name.verifySuspend -> replaceWithInternalVerify(expression, internalVerifySuspend.symbol)
+            // Object mocking intrinsics
+            Mokkery.Name.mockObject -> replaceWithMockObject(expression)
+            Mokkery.Name.unmockObject -> replaceWithUnmockObject(expression)
             else -> expression
         }
     }
@@ -298,5 +304,53 @@ class MokkeryTransformer(compilerPluginScope: CompilerPluginScope) : CoreTransfo
         .getProperty("global")
         .getter!!
         .let { irCall(it) { arguments[0] = irGetObject(mokkeryScopeCompanion.symbol) } }
+
+    // Object mocking support
+
+    private fun replaceWithMockObject(call: IrCall): IrExpression {
+        val typeToMock = call.typeArguments.firstOrNull() ?: return call
+        val classToMock = typeToMock.getClass() ?: return call
+        // Validate it's an object
+        if (!classToMock.isObject) {
+            // Let the FIR checker handle validation - just return for now
+            return call
+        }
+        val objectId = classToMock.kotlinFqName.asString()
+        val registryClass = getClass(Mokkery.Class.ObjectMockRegistry)
+        val companionObject = registryClass.companionObject() ?: return call
+
+        return declarationIrBuilder {
+            // ObjectMockRegistry.current().activate(objectId)
+            val currentCall = irCall(companionObject.getSimpleFunction("current")!!) {
+                arguments[0] = irGetObject(companionObject.symbol)
+            }
+            irCall(registryClass.getSimpleFunction("activate")!!) {
+                arguments[0] = currentCall
+                arguments[1] = irString(objectId)
+            }
+        }
+    }
+
+    private fun replaceWithUnmockObject(call: IrCall): IrExpression {
+        val typeToMock = call.typeArguments.firstOrNull() ?: return call
+        val classToMock = typeToMock.getClass() ?: return call
+        if (!classToMock.isObject) {
+            return call
+        }
+        val objectId = classToMock.kotlinFqName.asString()
+        val registryClass = getClass(Mokkery.Class.ObjectMockRegistry)
+        val companionObject = registryClass.companionObject() ?: return call
+
+        return declarationIrBuilder {
+            // ObjectMockRegistry.current().deactivate(objectId)
+            val currentCall = irCall(companionObject.getSimpleFunction("current")!!) {
+                arguments[0] = irGetObject(companionObject.symbol)
+            }
+            irCall(registryClass.getSimpleFunction("deactivate")!!) {
+                arguments[0] = currentCall
+                arguments[1] = irString(objectId)
+            }
+        }
+    }
 }
 

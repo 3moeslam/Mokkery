@@ -20,6 +20,8 @@ object Mokkery {
     val dev_mokkery_context by fqName
     val dev_mokkery_internal by fqName
     val dev_mokkery_internal_context by fqName
+    val dev_mokkery_internal_signature by fqName
+    val dev_mokkery_internal_interceptor by fqName
     val dev_mokkery_matcher by fqName
     val dev_mokkery_internal_templating by fqName
     val dev_mokkery_internal_matcher by fqName
@@ -45,6 +47,12 @@ object Mokkery {
 
         val CallArgument by dev_mokkery_context.klass
         val SuiteName by dev_mokkery_internal_context.klass
+
+        // Object mocking classes
+        val ObjectMockRegistry by dev_mokkery_internal_context.klass
+        val FunctionSignature by dev_mokkery_internal_signature.klass
+        val ObjectInterceptor by dev_mokkery_internal_interceptor.klass
+        val ObjectInterceptResult by dev_mokkery_internal_interceptor.klass
 
         val MokkeryTemplatingScope by dev_mokkery_templating.klass
         val TemplatingParameter by dev_mokkery_internal_templating.klass
@@ -86,6 +94,15 @@ object Mokkery {
         val matches by dev_mokkery_matcher.function { it.owner.parameters.size == 2 }
         val matchesComposite by dev_mokkery_matcher.function
         val spread by dev_mokkery_internal_matcher.function
+
+        // Object mocking functions
+        val objectMockRegistryCurrent by dev_mokkery_internal_context.function
+        val objectInterceptorIntercept by dev_mokkery_internal_interceptor.function { it.owner.name.asString() == "intercept" }
+        val objectInterceptorInterceptSuspend by dev_mokkery_internal_interceptor.function { it.owner.name.asString() == "interceptSuspend" }
+
+        // Object templating functions (for every { } / verify { } support)
+        val runObjectTemplate by dev_mokkery_internal_templating.function
+        val runObjectTemplateSuspend by dev_mokkery_internal_templating.function
     }
 
     object Property {
@@ -105,6 +122,11 @@ object Mokkery {
         val verifySuspend by dev_mokkery.fqName
         val ext by dev_mokkery_templating.fqName
         val ctx by dev_mokkery_templating.fqName
+
+        // Object mocking names
+        val mockObject by dev_mokkery.fqName
+        val unmockObject by dev_mokkery.fqName
+        val withMockedObject by dev_mokkery.fqName
     }
 
     object Callable {
@@ -119,6 +141,11 @@ object Mokkery {
         val ctx by dev_mokkery_templating.callableId
         val matches by dev_mokkery_matcher.callableId
         val matchesComposite by dev_mokkery_matcher.callableId
+
+        // Object mocking callables
+        val mockObject by dev_mokkery.callableId
+        val unmockObject by dev_mokkery.callableId
+        val withMockedObject by dev_mokkery.callableId
     }
 
     object ClassId {

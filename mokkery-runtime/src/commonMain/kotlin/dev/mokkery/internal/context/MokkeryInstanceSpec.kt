@@ -97,3 +97,17 @@ internal class InterceptedTypeSpec(val type: KClass<*>, val arguments: List<KCla
         }
     }
 }
+
+/**
+ * Spec for object mocks. Unlike regular mocks, object mocks represent
+ * Kotlin object declarations (singletons) and don't have intercepted types
+ * or a separate thisRef - they ARE the singleton.
+ */
+internal class ObjectMokkeryInstanceSpec(
+    override val id: MokkeryInstanceId,
+    override val thisRef: Any,
+) : MokkeryInstanceSpec {
+    override val interceptedTypes: List<InterceptedTypeSpec> = emptyList()
+
+    override fun toString(): String = "ObjectMokkeryInstanceSpec(id='$id')"
+}

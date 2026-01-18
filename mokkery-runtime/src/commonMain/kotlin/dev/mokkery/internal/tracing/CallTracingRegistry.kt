@@ -7,6 +7,7 @@ import dev.mokkery.MokkeryCallScope
 import dev.mokkery.MokkeryRuntimeException
 import dev.mokkery.internal.MokkeryCollection
 import dev.mokkery.internal.MokkeryInstanceId
+import dev.mokkery.internal.context.ObjectMockRegistry
 import dev.mokkery.internal.context.toCallTrace
 import dev.mokkery.internal.context.tools
 import dev.mokkery.internal.instanceId
@@ -133,4 +134,51 @@ private class CompositeSessionImpl(
         }
         error?.let { throw it }
     }
+}
+
+/**
+ * A CallTracingRegistry implementation for object mocks.
+ * Wraps ObjectMockRegistry traces and converts them to CallTrace format.
+ */
+internal class ObjectCallTracingRegistry(
+    private val objectId: String
+) : CallTracingRegistry {
+
+    private val verifiedTraces = linkedSetOf<CallTrace>()
+    private val verifiedTracesLock = reentrantLock()
+
+    override val all: List<CallTrace>
+        get() = ObjectMockRegistry.current()
+            .getTraces(objectId)
+            .map { it.toCallTrace() }
+
+    override fun trace(scope: MokkeryCallScope) {
+        // Object mocks trace calls through ObjectInterceptor, not here
+    }
+
+    override fun acquireSession() = object : CallTracingRegistry.Session {
+        private val allSnapshot = all.toMutableList()
+
+        init {
+            verifiedTracesLock.lock()
+        }
+
+        override val unverified: List<CallTrace>
+            get() = allSnapshot - verifiedTraces
+
+        override fun markVerified(trace: CallTrace) {
+            verifiedTraces.add(trace)
+        }
+
+        override fun resetAll() {
+            verifiedTraces.clear()
+            // Note: We don't clear the actual traces from ObjectMockRegistry
+            // as that would affect other tests
+            allSnapshot.clear()
+        }
+
+        override fun close() = verifiedTracesLock.unlock()
+    }
+
+    override fun toString(): String = "ObjectCallTracingRegistry(objectId=$objectId, all=$all)"
 }

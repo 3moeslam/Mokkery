@@ -7,6 +7,7 @@ import dev.mokkery.internal.answering.answering
 import dev.mokkery.internal.mokkeryScope
 import dev.mokkery.internal.context.MokkeryMockSpec
 import dev.mokkery.internal.context.MokkerySpySpec
+import dev.mokkery.internal.context.ObjectMokkeryInstanceSpec
 import dev.mokkery.internal.context.instanceSpec
 import dev.mokkery.internal.instanceIdString
 import dev.mokkery.internal.tracing.CallTracingRegistry
@@ -20,7 +21,8 @@ public fun mokkeryDebugString(obj: Any): String {
         null -> "Not a mock/spy -> $obj"
         else -> when (val spec = scope.instanceSpec) {
             is MokkerySpySpec -> mokkeryDebugSpy(scope)
-            is MokkeryMockSpec ->  mokkeryDebugMock(scope, spec)
+            is MokkeryMockSpec -> mokkeryDebugMock(scope, spec)
+            is ObjectMokkeryInstanceSpec -> "Object mock -> ${spec.id}"
         }
     }
 }

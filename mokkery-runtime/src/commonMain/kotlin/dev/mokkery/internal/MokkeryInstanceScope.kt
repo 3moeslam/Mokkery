@@ -105,3 +105,18 @@ internal fun MokkeryInstanceScope.typeArgumentAt(totalIndex: Int): KClass<*>? {
             if (totalIndex == index++) return typeArgument
     return null
 }
+
+/**
+ * Creates a minimal MokkeryInstanceScope for object mocks.
+ * Used for verification and aliasing purposes.
+ */
+internal fun createObjectMockScope(objectId: String): MokkeryInstanceScope {
+    val instanceId = MokkeryInstanceId(objectId, 0)
+    val spec = dev.mokkery.internal.context.ObjectMokkeryInstanceSpec(
+        id = instanceId,
+        thisRef = Unit // Placeholder - we don't have access to actual object in templating
+    )
+    val tracingRegistry = dev.mokkery.internal.tracing.ObjectCallTracingRegistry(objectId)
+    val context = dev.mokkery.context.MokkeryContext.Empty + spec + tracingRegistry
+    return MokkeryInstanceScope(context)
+}
