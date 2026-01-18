@@ -33,7 +33,25 @@ class BookServiceTest {
 }
 ```
 
-As shown in the example above, this library is highly inspired by the [MockK](https://mockk.io).
+Mokkery also supports mocking Kotlin `object` declarations:
+
+```kotlin
+object Analytics {
+    fun trackEvent(name: String): Unit = // real implementation
+}
+
+@Test
+fun `should track checkout event`() {
+    mockObject<Analytics>()
+    every { Analytics.trackEvent(any()) } returns Unit
+
+    checkout()
+
+    verify { Analytics.trackEvent("checkout") }
+}
+```
+
+As shown in the examples above, this library is highly inspired by the [MockK](https://mockk.io).
 If you have any experience with MockK, it should be easy to start with Mokkery!
 
 ### [Documentation is available here!](https://mokkery.dev/)
