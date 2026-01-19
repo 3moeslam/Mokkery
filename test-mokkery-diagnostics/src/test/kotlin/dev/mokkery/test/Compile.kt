@@ -23,11 +23,17 @@ fun compileJvm(@Language("kotlin") file: String): JvmCompilationResult {
 
 fun JvmCompilationResult.assertSingleError(message: String, level: String = "e:") {
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
-    messages
+    val errorLines = messages
         .split("\n")
-        .single { it.isNotBlank() }
-        .let {
-            assertTrue { it.startsWith(level) }
-            assertContains(it, message)
-        }
+        .filter { it.startsWith(level) }
+    assertEquals(1, errorLines.size, "Expected exactly one error line starting with '$level', but found ${errorLines.size}: $errorLines")
+    assertContains(errorLines.single(), message)
+}
+
+fun JvmCompilationResult.assertNoErrors() {
+    assertEquals(KotlinCompilation.ExitCode.OK, exitCode)
+    val errorLines = messages
+        .split("\n")
+        .filter { it.startsWith("e:") }
+    assertTrue(errorLines.isEmpty(), "Expected no errors, but found: $errorLines")
 }

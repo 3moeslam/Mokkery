@@ -1,7 +1,6 @@
 package dev.mokkery.plugin
 
 import com.google.auto.service.AutoService
-import dev.mokkery.MokkeryConfig
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
@@ -9,8 +8,6 @@ import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
 
 @AutoService(CompilerPluginRegistrar::class)
 class MokkeryCompilerPluginRegistrar : CompilerPluginRegistrar() {
-
-    override val pluginId = MokkeryConfig.PLUGIN_ID
 
     override val supportsK2: Boolean = true
 

@@ -1,9 +1,6 @@
 package dev.mokkery.test
 
-import com.tschuchort.compiletesting.KotlinCompilation
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class MatchersUsageInTemplatingTest {
 
@@ -96,19 +93,19 @@ class MatchersUsageInTemplatingTest {
 
     @Test
     fun testAllowsTryCatchUsingMatcher() {
-        val result = compileJvm(
+        compileJvm(
             """
             import dev.mokkery.mock
             import dev.mokkery.every
             import dev.mokkery.matcher.any
-            
+
             interface Foo {
                 fun foo(arg: Int): Int
             }
-            
+
             fun main() {
                 val mock = mock<Foo>()
-                every { 
+                every {
                     val matcher = try {
                         any<Int>()
                         1
@@ -119,9 +116,7 @@ class MatchersUsageInTemplatingTest {
                 }
             }
         """.trimIndent()
-        )
-        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
-        assertTrue(result.messages.isEmpty())
+        ).assertNoErrors()
     }
 
     @Test

@@ -94,7 +94,7 @@ class MocksCreationChecker(
         val classMappings = expression.typeArguments.groupBy {
             val type = it.toConeTypeProjection().type ?: return
             if (!checkInterceptionType(it.source ?: expression.source, type)) return
-            val classSymbol = type.toRegularClassSymbol() ?: return
+            val classSymbol = type.toRegularClassSymbol(context.session) ?: return
             classSymbol
         }
         if (!checkNoDuplicates(expression.typeArguments.size, classMappings)) return
@@ -158,7 +158,7 @@ class MocksCreationChecker(
     context(context: CheckerContext, reporter: DiagnosticReporter, funSymbol: FirNamedFunctionSymbol)
     private fun checkInterceptionType(source: AbstractKtSourceElement?, type: ConeKotlinType): Boolean {
         if (!checkInterceptionTypeParameter(source, type)) return false
-        val classSymbol = type.toRegularClassSymbol() ?: return false
+        val classSymbol = type.toRegularClassSymbol(context.session) ?: return false
         if (!checkInterceptionModality(source, classSymbol)) return false
         if (classSymbol.isInterface) return true
         if (!checkClassInterceptionRequirements(source, classSymbol)) return false
@@ -220,7 +220,7 @@ class MocksCreationChecker(
         val inheritedSymbols = classSymbol
             .resolvedSuperTypes
             .asSequence()
-            .mapNotNull { it.toRegularClassSymbol() }
+            .mapNotNull { it.toRegularClassSymbol(context.session) }
             .flatMap { it.declaredMembers(context.session) }
         val allDeclarationSymbols = classSymbol
             .declaredMembers(context.session)
@@ -296,7 +296,7 @@ class MocksCreationChecker(
         if (type in typesStack) return listOf(type to StubError.Recursion)
         if (type.isPossibleToStubByDefault()) return emptyList()
         val cls = type
-            .toRegularClassSymbol()
+            .toRegularClassSymbol(context.session)
             ?: return listOf(type to StubError.NoAccessibleConstructors)
         val constructors = cls
             .constructors(context.session)
@@ -327,7 +327,7 @@ class MocksCreationChecker(
         }
         if (erased in typesStack) return false
         if (erased.isPossibleToStubByDefault()) return true
-        val cls = erased.toRegularClassSymbol() ?: return false
+        val cls = erased.toRegularClassSymbol(context.session) ?: return false
         return (stubsConfig.allowConcreteClassInstantiation && cls.isInstantiableClass(typesStack + this))
                 || (stubsConfig.allowClassInheritance && cls.isOverridableClass(typesStack + this))
     }
@@ -337,7 +337,7 @@ class MocksCreationChecker(
         isNullableType()
                 || isAnyOf(defaultTypesToStub)
                 || isSomeFunctionType(context.session)
-                || toRegularClassSymbol()?.let { cls ->
+                || toRegularClassSymbol(context.session)?.let { cls ->
                     val fqName = cls.packageFqName()
                     cls.isRegularInterface()
                             || cls.isEnumClass

@@ -1,8 +1,6 @@
 package dev.mokkery.test
 
-import com.tschuchort.compiletesting.KotlinCompilation
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class MockManyCreationDiagnosticsTest {
 
@@ -142,7 +140,7 @@ class MockManyCreationDiagnosticsTest {
 
     @Test
     fun testAllowsFunctionOnNonJs() {
-        val result = compileJvm(
+        compileJvm(
             """
             import dev.mokkery.mockMany
 
@@ -150,8 +148,6 @@ class MockManyCreationDiagnosticsTest {
                 mockMany<AutoCloseable, () -> Int>()
             }
             """.trimIndent()
-        )
-        assert(result.messages.isEmpty())
-        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
+        ).assertNoErrors()
     }
 }

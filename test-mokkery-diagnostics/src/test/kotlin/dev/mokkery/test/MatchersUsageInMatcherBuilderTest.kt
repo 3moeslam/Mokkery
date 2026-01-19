@@ -1,9 +1,6 @@
 package dev.mokkery.test
 
-import com.tschuchort.compiletesting.KotlinCompilation
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class MatchersUsageInMatcherBuilderTest {
 
@@ -70,12 +67,12 @@ class MatchersUsageInMatcherBuilderTest {
 
     @Test
     fun testAllowsTryCatchUsingMatcher() {
-        val result = compileJvm(
+        compileJvm(
             """
             import dev.mokkery.matcher.MokkeryMatcherScope
             import dev.mokkery.matcher.any
-        
-            fun MokkeryMatcherScope.matcher(): Int {            
+
+            fun MokkeryMatcherScope.matcher(): Int {
                 return try {
                     any<Int>()
                     1
@@ -84,9 +81,7 @@ class MatchersUsageInMatcherBuilderTest {
                 }
             }
         """.trimIndent()
-        )
-        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
-        assertTrue(result.messages.isEmpty())
+        ).assertNoErrors()
     }
 
 

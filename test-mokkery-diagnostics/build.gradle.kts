@@ -9,5 +9,8 @@ dependencies {
     testImplementation(project(":mokkery-runtime"))
     testImplementation(project(":mokkery-plugin"))
     testImplementation(kotlin("test"))
-    testImplementation(libs.kctesting)
+    testImplementation(libs.kctesting) {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
+    }
+    testImplementation(libs.kotlin.compiler.embeddable)
 }
